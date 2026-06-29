@@ -1,0 +1,2245 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BioSync Pro - Enterprise Local Edition</title>
+    <!-- Tailwind CSS for rapid modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Premium Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Leaflet CSS for Maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Chart.js for beautiful analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root { 
+            --bg: #f8fafc; /* Slate 50 (Cerah Bersih Default) */
+            --surface: rgba(255, 255, 255, 0.85); 
+            --accent: #10b981; /* Emerald 500 (Hijau Sukses) */
+            --accent-hover: #059669;
+            --text: #0f172a; /* Slate 900 */
+            --border: rgba(15, 23, 42, 0.08); 
+            --text-secondary: #64748b;
+        }
+        body.dark-mode { 
+            --bg: #020617; /* Slate 950 */
+            --surface: rgba(15, 23, 42, 0.7); 
+            --accent: #34d399; /* Emerald 400 */
+            --accent-hover: #10b981;
+            --text: #f8fafc; /* Slate 50 */
+            --border: rgba(255, 255, 255, 0.08); 
+            --text-secondary: #94a3b8;
+        }
+        body { 
+            background: var(--bg); 
+            color: var(--text); 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+            min-height: 100vh; 
+            overflow-x: hidden; 
+        }
+        .glass { 
+            background: var(--surface); 
+            backdrop-filter: blur(16px); 
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border); 
+            border-radius: 24px; 
+            transition: background 0.3s ease, border 0.3s ease;
+        }
+        .btn-primary { 
+            background: var(--accent); 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
+        .btn-primary:hover { 
+            background: var(--accent-hover);
+            transform: translateY(-2px); 
+            box-shadow: 0 12px 24px -8px var(--accent); 
+        }
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; }
+        @keyframes scan { 
+            0% { top: 0; opacity: 0.2; } 
+            50% { opacity: 1; } 
+            100% { top: 100%; opacity: 0.2; } 
+        }
+        .scan-line { 
+            position: absolute; 
+            width: 100%; 
+            height: 3px; 
+            background: linear-gradient(to right, transparent, var(--accent), transparent); 
+            box-shadow: 0 0 15px var(--accent); 
+            display: none; 
+        }
+        .active-scan .scan-line { 
+            display: block; 
+            animation: scan 1.8s infinite ease-in-out; 
+        }
+        /* Custom scrollbar */
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 10px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+            background: var(--accent);
+        }
+        #map {
+            height: 180px;
+            border-radius: 16px;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 flex items-center justify-center">
+
+    <!-- Toast Notification System -->
+    <div id="toast" class="fixed top-6 left-1/2 -translate-x-1/2 z-[100] px-6 py-3.5 rounded-full glass text-sm font-bold opacity-0 -translate-y-4 transition-all duration-300 pointer-events-none shadow-2xl flex items-center gap-2"></div>
+
+    <!-- Theme Toggle Button -->
+    <button id="theme-btn" class="fixed top-6 right-6 w-12 h-12 glass flex items-center justify-center text-xl shadow-xl z-50 hover:scale-110 active:scale-95 transition-all">☀️</button>
+
+    <!-- UI: LOGIN -->
+    <div id="auth-section" class="w-full max-w-md mx-auto space-y-8 transition-all duration-500 py-8">
+        <div class="text-center space-y-4">
+            <div class="w-24 h-24 bg-emerald-600 rounded-[2.2rem] mx-auto flex items-center justify-center shadow-2xl rotate-6 hover:rotate-0 transition-transform duration-300">
+                <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.519 1.298-3.003 2.103-4.5"/>
+                </svg>
+            </div>
+            <h1 class="text-5xl font-black tracking-tighter italic">BioSync <span class="text-emerald-500">PRO</span></h1>
+            <p class="text-[10px] font-bold opacity-50 uppercase tracking-[0.4em]">Edisi Kelas Xe1 - Xe12 v6.5</p>
+        </div>
+
+        <!-- Tab Login (User vs Admin) -->
+        <div class="glass p-2 flex gap-1 rounded-2xl">
+            <button id="tab-user-btn" class="flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider bg-emerald-600/20 text-emerald-600 transition-all">Absensi Siswa</button>
+            <button id="tab-admin-btn" class="flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-black/5 dark:hover:bg-white/5 transition-all">Portal Admin</button>
+        </div>
+
+        <!-- FORM: USER LOGIN -->
+        <div id="form-user" class="glass p-8 space-y-6 shadow-2xl">
+            <div class="space-y-4">
+                <div class="space-y-1">
+                    <label class="text-[10px] font-bold uppercase opacity-60 ml-1">Nama Lengkap Siswa</label>
+                    <input id="user-name" type="text" placeholder="Masukkan Nama Lengkap..." class="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-5 py-4 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-semibold text-sm text-inherit">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] font-bold uppercase opacity-60 ml-1">ID Siswa / NIS</label>
+                    <input id="user-id" type="text" placeholder="Masukkan ID / Nomor Induk..." class="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-5 py-4 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-mono text-sm text-inherit">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] font-bold uppercase opacity-60 ml-1">Kelas</label>
+                    <select id="user-class" class="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-5 py-4 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-semibold text-sm text-inherit [&>option]:bg-white [&>option]:text-slate-800 dark:[&>option]:bg-slate-900 dark:[&>option]:text-white">
+                        <option value="" disabled selected>Pilih Kelas Anda...</option>
+                        <option value="Xe1">Xe1</option>
+                        <option value="Xe2">Xe2</option>
+                        <option value="Xe3">Xe3</option>
+                        <option value="Xe4">Xe4</option>
+                        <option value="Xe5">Xe5</option>
+                        <option value="Xe6">Xe6</option>
+                        <option value="Xe7">Xe7</option>
+                        <option value="Xe8">Xe8</option>
+                        <option value="Xe9">Xe9</option>
+                        <option value="Xe10">Xe10</option>
+                        <option value="Xe11">Xe11</option>
+                        <option value="Xe12">Xe12</option>
+                    </select>
+                </div>
+            </div>
+            <button id="login-btn" class="w-full btn-primary text-white font-black py-5 rounded-2xl uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg">
+                <span>Masuk Terminal</span>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </button>
+            <p class="text-center text-gray-500 text-[9px] font-bold uppercase tracking-wider">🔒 Data tersimpan otomatis di browser lokal Anda</p>
+        </div>
+
+        <!-- FORM: ADMIN LOGIN -->
+        <div id="form-admin" class="hidden glass p-8 space-y-6 shadow-2xl">
+            <div class="space-y-4">
+                <div class="space-y-1">
+                    <label class="text-[10px] font-bold uppercase opacity-60 ml-1">Sandi Administrator</label>
+                    <input id="admin-pass" type="password" placeholder="Sandi Default: admin123" class="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-5 py-4 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-semibold text-sm tracking-widest text-inherit">
+                </div>
+            </div>
+            <button id="login-admin-btn" class="w-full btn-primary text-white font-black py-5 rounded-2xl uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg">
+                <span>Masuk Dashboard Guru/Admin</span>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+            </button>
+            <p class="text-center text-gray-500 text-[9px] font-bold uppercase tracking-wider">🔐 Enkripsi Kunci Sesi Administrator Aktif</p>
+        </div>
+    </div>
+
+    <!-- UI: DASHBOARD PERSONEL -->
+    <div id="dashboard" class="hidden w-full max-w-6xl mx-auto space-y-8 opacity-0 transition-all duration-700 py-4">
+        
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div class="flex items-center gap-4">
+                <div id="user-initial" class="w-16 h-16 rounded-2xl bg-emerald-600 flex items-center justify-center text-3xl font-black text-white shadow-lg shadow-emerald-500/30">?</div>
+                <div>
+                    <h2 id="display-name" class="text-3xl font-black tracking-tight">---</h2>
+                    <div class="flex flex-wrap items-center gap-2 mt-1">
+                        <span id="display-id" class="text-xs font-mono opacity-60 uppercase tracking-tighter">ID: ---</span>
+                        <span class="text-xs opacity-60">•</span>
+                        <span id="display-class" class="text-xs font-bold text-emerald-600">Kelas: ---</span>
+                        <div class="status-dot bg-emerald-500 animate-pulse"></div>
+                        <span class="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">Sesi Enkripsi Lokal</span>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="text-left md:text-right">
+                    <div id="clock" class="text-4xl font-black text-emerald-600 tabular-nums leading-none tracking-tighter">00:00:00</div>
+                    <div id="date" class="text-[10px] font-bold opacity-50 uppercase tracking-[0.2em] mt-2">---</div>
+                </div>
+                <button id="logout-btn" class="px-4 py-3 rounded-xl bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white text-xs font-bold uppercase transition-all">Keluar</button>
+            </div>
+        </header>
+
+        <!-- Stats Grid (Personel) -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="glass p-5 h-28 flex flex-col justify-between">
+                <p class="text-[9px] font-bold opacity-50 uppercase tracking-widest">Absen Saya</p>
+                <div class="flex items-baseline gap-2">
+                    <span id="stat-total-personel" class="text-4xl font-black italic">0</span>
+                    <span class="text-[9px] font-bold opacity-40">TEREKAM</span>
+                </div>
+            </div>
+            <div class="glass p-5 h-28 flex flex-col justify-between border-l-4 border-l-emerald-500">
+                <p class="text-[9px] font-bold opacity-50 uppercase tracking-widest">Pengajuan Izin Saya</p>
+                <div class="flex items-baseline gap-2">
+                    <span id="stat-permit-personel" class="text-4xl font-black italic text-emerald-500">0</span>
+                    <span class="text-[9px] font-bold opacity-40">PENGAJUAN</span>
+                </div>
+            </div>
+            <div class="glass p-5 h-28 flex flex-col justify-between">
+                <p class="text-[9px] font-bold opacity-50 uppercase tracking-widest">Presisi Satelit</p>
+                <div class="flex items-baseline gap-1">
+                    <span id="stat-accuracy" class="text-4xl font-black text-amber-500 italic">--</span>
+                    <span id="stat-accuracy-unit" class="text-[9px] font-bold opacity-40 uppercase">Meters</span>
+                </div>
+            </div>
+            <div class="glass p-5 h-28 flex flex-col justify-between overflow-hidden relative">
+                <p class="text-[9px] font-bold opacity-50 uppercase tracking-widest">Sistem Penyimpanan</p>
+                <span class="text-2xl font-black text-emerald-500 italic">BROWSER OK</span>
+                <div class="absolute -right-4 -bottom-4 w-16 h-16 bg-emerald-500/10 rounded-full blur-2xl"></div>
+            </div>
+        </div>
+
+        <!-- Tab Selection inside Dashboard -->
+        <div class="glass p-2 flex gap-1 rounded-2xl max-w-lg">
+            <button id="user-tab-biometric" class="flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider bg-emerald-600/20 text-emerald-600 transition-all">Absen Wajah</button>
+            <button id="user-tab-permits" class="flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-black/5 dark:hover:bg-white/5 transition-all">Surat Izin</button>
+            <button id="user-tab-stats" class="flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-black/5 dark:hover:bg-white/5 transition-all">Bagan Saya</button>
+        </div>
+
+        <!-- VIEW: BIOMETRIC FEED -->
+        <div id="view-user-biometric" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Camera Feed View & GPS Map -->
+            <div class="lg:col-span-2 space-y-4">
+                <div id="cam-box" class="relative aspect-video glass overflow-hidden shadow-2xl group ring-1 ring-black/5 dark:ring-white/10">
+                    <video id="webcam" autoplay playsinline class="w-full h-full object-cover brightness-110 grayscale-[0.1]"></video>
+                    <div class="scan-line"></div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 pointer-events-none"></div>
+                    
+                    <div class="absolute top-6 left-6 flex items-center gap-2">
+                        <div class="w-2.5 h-2.5 rounded-full bg-red-600 animate-ping"></div>
+                        <span class="text-[10px] font-bold text-white uppercase tracking-widest">LIVE BIOMETRIC</span>
+                    </div>
+
+                    <div class="absolute bottom-6 left-6 right-6 flex items-end justify-between gap-4">
+                        <div class="space-y-1">
+                            <div class="bg-black/70 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/10 max-w-xs md:max-w-md">
+                                <p id="gps-text" class="text-[10px] font-mono text-white/90">MENUNGGU DATA GPS...</p>
+                                <p id="gps-status" class="text-[9px] font-bold text-emerald-400 uppercase tracking-tighter mt-0.5">MENGHUBUNGKAN SATELIT...</p>
+                            </div>
+                        </div>
+                        <button id="capture-btn" class="w-20 h-20 rounded-[1.8rem] bg-emerald-600 hover:bg-emerald-500 flex items-center justify-center shadow-2xl transition-all active:scale-90 group-hover:scale-105 border-4 border-white/20 shrink-0">
+                            <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Live Map Section for User -->
+                <div class="glass p-4 space-y-2">
+                    <p class="text-xs font-bold uppercase opacity-60">Lokasi Peta Presisi Satelit</p>
+                    <div id="map"></div>
+                </div>
+            </div>
+
+            <!-- Activity Logs Section (Individual) -->
+            <div class="glass flex flex-col h-[400px] lg:h-auto min-h-[400px]">
+                <div class="p-6 border-b border-black/10 dark:border-white/10">
+                    <h3 class="text-xs font-black uppercase tracking-widest opacity-70">Log Riwayat Saya</h3>
+                    <p class="text-[9px] font-mono opacity-40 mt-0.5">SINKRONISASI BROWSER LOKAL</p>
+                </div>
+                
+                <div id="log-list-individual" class="flex-1 overflow-y-auto p-4 space-y-3 custom-scroll">
+                    <div class="text-center py-20 opacity-30 italic text-xs tracking-widest">Memulai feed data lokal...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: LEAVE / PERMIT REQUEST FORM -->
+        <div id="view-user-permits" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Form Input -->
+            <div class="lg:col-span-2 glass p-8 space-y-6">
+                <div>
+                    <h3 class="text-xl font-black uppercase">Pusat Pengajuan Surat Izin</h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Gunakan formulir ini jika Anda tidak dapat hadir dan butuh mengajukan izin atau surat sakit resmi.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold uppercase opacity-60 ml-1">Jenis Izin</label>
+                        <select id="permit-type" class="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 text-sm font-semibold text-inherit [&>option]:bg-white [&>option]:text-slate-800 dark:[&>option]:bg-slate-900 dark:[&>option]:text-white">
+                            <option value="Sakit">Sakit (Butuh Lampiran Dokter)</option>
+                            <option value="Cuti">Cuti</option>
+                            <option value="Izin">Izin Alasan Penting</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold uppercase opacity-60 ml-1">Unggah Bukti / Surat Dokter</label>
+                        <input id="permit-file" type="file" accept="image/*" class="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-2.5 outline-none focus:border-emerald-500 text-xs text-inherit">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold uppercase opacity-60 ml-1">Tanggal Mulai</label>
+                        <input id="permit-start-date" type="date" class="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 text-sm text-inherit">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold uppercase opacity-60 ml-1">Tanggal Selesai</label>
+                        <input id="permit-end-date" type="date" class="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 text-sm text-inherit">
+                    </div>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-[10px] font-bold uppercase opacity-60 ml-1">Alasan Pengajuan</label>
+                    <textarea id="permit-reason" rows="3" placeholder="Tulis alasan lengkap Anda di sini..." class="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 text-sm text-inherit"></textarea>
+                </div>
+
+                <!-- Live Upload Preview Container -->
+                <div id="preview-box" class="hidden p-4 border border-dashed border-black/20 dark:border-white/20 rounded-xl space-y-2">
+                    <p class="text-[10px] font-bold uppercase opacity-50">Pratinjau Bukti Terlampir:</p>
+                    <img id="permit-img-preview" src="" alt="Bukti Lampiran" class="max-h-48 rounded-lg border border-black/10 dark:border-white/10 object-contain">
+                </div>
+
+                <button id="submit-permit-btn" class="w-full btn-primary text-white font-black py-4 rounded-xl uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg">
+                    <span>Kirim Pengajuan Surat Izin</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                </button>
+            </div>
+
+            <!-- Individual Permits List -->
+            <div class="glass flex flex-col h-[400px] lg:h-auto min-h-[400px]">
+                <div class="p-6 border-b border-black/10 dark:border-white/10">
+                    <h3 class="text-xs font-black uppercase tracking-widest opacity-70">Status Surat Izin Saya</h3>
+                    <p class="text-[9px] font-mono opacity-40 mt-0.5">RIWAYAT PERMOHONAN SAYA</p>
+                </div>
+                
+                <div id="permit-list-individual" class="flex-1 overflow-y-auto p-4 space-y-3 custom-scroll">
+                    <div class="text-center py-20 opacity-30 italic text-xs tracking-widest">Memulai feed data perizinan...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: USER STATISTICS / BAGAN SAYA -->
+        <div id="view-user-stats" class="hidden grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Bagan Kartesius Tren Jam Absensi (Cartesian Line Chart) -->
+            <div class="glass p-6 md:col-span-2 flex flex-col justify-between min-h-[350px]">
+                <div>
+                    <h3 class="text-xs font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Bagan Kartesius: Tren Jam Absensi Saya</h3>
+                    <p class="text-[10px] font-mono opacity-50 mb-4">Grafik koordinat kartesius (Sumbu X = Tanggal, Sumbu Y = Jam Masuk)</p>
+                </div>
+                <div class="flex-1 flex items-center justify-center relative w-full h-[250px]">
+                    <canvas id="user-cartesian-chart" class="max-h-[250px] max-w-full"></canvas>
+                </div>
+            </div>
+
+            <!-- Bagan Kedisiplinan Siswa -->
+            <div class="glass p-6 flex flex-col justify-between min-h-[350px]">
+                <div>
+                    <h3 class="text-xs font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Rasio Kedisiplinan Absensi Saya</h3>
+                    <p class="text-[10px] font-mono opacity-50 mb-4">Statistik jam masuk tepat waktu vs terlambat</p>
+                </div>
+                <div class="flex-1 flex items-center justify-center relative w-full h-[220px]">
+                    <canvas id="user-discipline-chart" class="max-h-[220px] max-w-full"></canvas>
+                </div>
+            </div>
+
+            <!-- Bagan Absen vs Izin Siswa -->
+            <div class="glass p-6 flex flex-col justify-between min-h-[350px]">
+                <div>
+                    <h3 class="text-xs font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Rasio Absensi Wajah vs Pengajuan Izin</h3>
+                    <p class="text-[10px] font-mono opacity-50 mb-4">Perbandingan aktivitas log masuk vs surat sakit/izin</p>
+                </div>
+                <div class="flex-1 flex items-center justify-center relative w-full h-[220px]">
+                    <canvas id="user-permit-ratio-chart" class="max-h-[220px] max-w-full"></canvas>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- UI: DASHBOARD ADMIN -->
+    <div id="admin-dashboard" class="hidden w-full max-w-6xl mx-auto space-y-8 opacity-0 transition-all duration-700 py-4">
+        
+        <!-- Header Admin -->
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div class="flex items-center gap-4">
+                <div class="w-16 h-16 rounded-2xl bg-emerald-600 flex items-center justify-center text-3xl font-black text-white shadow-lg shadow-emerald-500/30">💼</div>
+                <div>
+                    <h2 class="text-3xl font-black tracking-tight text-emerald-600">Panel Guru / Admin</h2>
+                    <div class="flex items-center gap-2 mt-1">
+                        <div class="status-dot bg-emerald-500 animate-pulse"></div>
+                        <span class="text-[9px] font-bold text-emerald-600 uppercase tracking-widest">Sesi Kontrol Penuh Terbuka</span>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <button id="kiosk-mode-btn" class="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold uppercase transition-all shadow-lg flex items-center gap-2">
+                    <span>⚡ Mode Kios</span>
+                </button>
+                <button id="logout-admin-btn" class="px-5 py-3 rounded-xl bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white text-xs font-bold uppercase transition-all">Keluar Admin</button>
+            </div>
+        </header>
+
+        <!-- Stats Grid (Admin) -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="glass p-5 h-28 flex flex-col justify-between border-l-4 border-l-emerald-500">
+                <p class="text-[9px] font-bold opacity-50 uppercase tracking-widest">Total Seluruh Absensi</p>
+                <div class="flex items-baseline gap-2">
+                    <span id="admin-stat-total" class="text-4xl font-black italic text-emerald-600">0</span>
+                    <span class="text-[9px] font-bold opacity-40">REKOR</span>
+                </div>
+            </div>
+            <div class="glass p-5 h-28 flex flex-col justify-between">
+                <p class="text-[9px] font-bold opacity-50 uppercase tracking-widest">Total Izin Disetujui</p>
+                <div class="flex items-baseline gap-2">
+                    <span id="admin-stat-permits" class="text-4xl font-black italic text-emerald-600">0</span>
+                    <span class="text-[9px] font-bold opacity-40">SURAT</span>
+                </div>
+            </div>
+            <div class="glass p-5 h-28 flex flex-col justify-between relative overflow-hidden">
+                <p class="text-[9px] font-bold opacity-50 uppercase tracking-widest">Menunggu Persetujuan</p>
+                <div class="flex items-baseline gap-2">
+                    <span id="admin-stat-pending" class="text-4xl font-black italic text-amber-500">0</span>
+                    <span class="text-[9px] font-bold opacity-40 font-mono">IZIN</span>
+                </div>
+                <!-- Warning Indicator if Pending > 0 -->
+                <div id="pending-alert-glow" class="absolute -right-6 -bottom-6 w-12 h-12 bg-amber-500/20 rounded-full blur-xl hidden"></div>
+            </div>
+            <div class="glass p-5 h-28 flex flex-col justify-between">
+                <p class="text-[9px] font-bold opacity-50 uppercase tracking-widest">Akurasi Rata-rata GPS</p>
+                <div class="flex items-baseline gap-1">
+                    <span id="admin-stat-gps" class="text-4xl font-black text-emerald-500 italic">--</span>
+                    <span class="text-[9px] font-bold opacity-40 uppercase">Meters</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Selection inside Admin Panel -->
+        <div class="glass p-2 flex gap-1 rounded-2xl max-w-lg">
+            <button id="admin-tab-attendance" class="flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider bg-emerald-600/20 text-emerald-600 transition-all">Database Absensi</button>
+            <button id="admin-tab-permits" class="flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-black/5 dark:hover:bg-white/5 transition-all">Persetujuan Izin</button>
+            <button id="admin-tab-charts" class="flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-black/5 dark:hover:bg-white/5 transition-all">Bagan & Analisis</button>
+        </div>
+
+        <!-- MAIN VIEW 1: Database Absensi (Absence Records Table) -->
+        <div id="view-admin-attendance" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Table Database Log -->
+            <div class="lg:col-span-2 glass p-6 flex flex-col h-[600px] overflow-hidden">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                    <div>
+                        <h3 class="text-sm font-black uppercase tracking-wider">Database Utama Browser</h3>
+                        <p class="text-[10px] font-mono opacity-50">Menampilkan semua log kehadiran sekolah yang terekam</p>
+                    </div>
+                    <!-- Search Input -->
+                    <input id="admin-search" type="text" placeholder="Cari nama, NIS, atau kelas..." class="w-full sm:w-64 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-2 outline-none focus:border-emerald-500 text-xs font-semibold text-inherit">
+                </div>
+
+                <!-- Table Content -->
+                <div class="flex-1 overflow-auto custom-scroll border border-black/5 dark:border-white/5 rounded-xl">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-black/5 dark:bg-white/5 uppercase font-bold text-[10px] tracking-wider sticky top-0 z-10">
+                            <tr>
+                                <th class="p-4 border-b border-black/10 dark:border-white/10">Nama & Wajah</th>
+                                <th class="p-4 border-b border-black/10 dark:border-white/10">NIS / ID</th>
+                                <th class="p-4 border-b border-black/10 dark:border-white/10">Kelas</th>
+                                <th class="p-4 border-b border-black/10 dark:border-white/10">Status</th>
+                                <th class="p-4 border-b border-black/10 dark:border-white/10">Waktu Absen</th>
+                                <th class="p-4 border-b border-black/10 dark:border-white/10">Koordinat GPS</th>
+                                <th class="p-4 border-b border-black/10 dark:border-white/10 text-right">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-table-body" class="divide-y divide-black/5 dark:divide-white/5">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Admin Action Center & Quick Directory -->
+            <div class="glass p-6 flex flex-col h-[600px] justify-between">
+                <div>
+                    <h3 class="text-sm font-black uppercase tracking-wider mb-4 text-emerald-600">Pusat Kendali Guru</h3>
+                    
+                    <div class="space-y-3">
+                        <!-- Dynamic Time Rule Setup -->
+                        <div class="p-3.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl space-y-1.5">
+                            <label class="text-[10px] font-bold uppercase opacity-60">Aturan Jam Batas Masuk</label>
+                            <div class="flex items-center gap-2">
+                                <input id="admin-late-time-limit" type="time" value="07:15" class="bg-black/10 dark:bg-slate-900 border border-black/10 dark:border-white/10 rounded-lg px-2.5 py-1.5 outline-none focus:border-emerald-500 text-xs font-bold font-mono text-inherit">
+                                <span class="text-[9px] opacity-50 uppercase font-bold text-slate-500 dark:text-slate-400">Batas Telat</span>
+                            </div>
+                        </div>
+
+                        <!-- Class-Specific CSV Export Filter -->
+                        <div class="p-3.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl space-y-1.5">
+                            <label class="text-[10px] font-bold uppercase opacity-60">Filter Kelas Unduhan</label>
+                            <select id="admin-export-class-select" class="w-full bg-black/10 dark:bg-slate-900 border border-black/10 dark:border-white/10 rounded-lg px-2.5 py-1.5 outline-none focus:border-emerald-500 text-xs font-bold text-inherit [&>option]:bg-white [&>option]:text-slate-800 dark:[&>option]:bg-slate-900 dark:[&>option]:text-white">
+                                <option value="Semua">Semua Kelas (Xe1 - Xe12)</option>
+                                <option value="Xe1">Xe1</option>
+                                <option value="Xe2">Xe2</option>
+                                <option value="Xe3">Xe3</option>
+                                <option value="Xe4">Xe4</option>
+                                <option value="Xe5">Xe5</option>
+                                <option value="Xe6">Xe6</option>
+                                <option value="Xe7">Xe7</option>
+                                <option value="Xe8">Xe8</option>
+                                <option value="Xe9">Xe9</option>
+                                <option value="Xe10">Xe10</option>
+                                <option value="Xe11">Xe11</option>
+                                <option value="Xe12">Xe12</option>
+                            </select>
+                        </div>
+
+                        <!-- Export Excel / CSV -->
+                        <button id="admin-export-csv" class="w-full py-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            <span>Unduh Laporan Excel (CSV)</span>
+                        </button>
+                        
+                        <!-- Export JSON -->
+                        <button id="admin-export-json" class="w-full py-4 rounded-xl bg-emerald-600/20 hover:bg-emerald-600 hover:text-white text-emerald-600 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all border border-emerald-500/20">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                            <span>Salin Log Mentah (JSON)</span>
+                        </button>
+
+                        <!-- Clear Database -->
+                        <button id="admin-reset" class="w-full py-4 rounded-xl bg-red-600/10 hover:bg-red-600 hover:text-white text-red-500 hover:text-white text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all border border-red-500/20">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            <span>Kosongkan Seluruh Log</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Directory List of Active Employees -->
+                <div class="border-t border-black/10 dark:border-white/10 pt-4 flex-1 mt-4 overflow-hidden flex flex-col">
+                    <h4 class="text-[10px] font-black uppercase opacity-50 tracking-widest mb-2">Direktori Kelas Aktif</h4>
+                    <div id="admin-unique-list" class="flex-1 overflow-y-auto custom-scroll space-y-2">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN VIEW 2: Persetujuan Izin (Permits Management Table) -->
+        <div id="view-admin-permits" class="hidden glass p-6 flex flex-col h-[550px] overflow-hidden">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <div>
+                    <h3 class="text-sm font-black uppercase tracking-wider">Sistem Manajemen Surat Izin Siswa</h3>
+                    <p class="text-[10px] font-mono opacity-50">Menyetujui, menolak, atau meninjau berkas alasan tidak hadir siswa</p>
+                </div>
+            </div>
+
+            <!-- Table content of Permits -->
+            <div class="flex-1 overflow-auto custom-scroll border border-black/5 dark:border-white/5 rounded-xl">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-black/5 dark:bg-white/5 uppercase font-bold text-[10px] tracking-wider sticky top-0 z-10">
+                        <tr>
+                            <th class="p-4 border-b border-black/10 dark:border-white/10">Siswa (Kelas / ID)</th>
+                            <th class="p-4 border-b border-black/10 dark:border-white/10">Jenis Izin</th>
+                            <th class="p-4 border-b border-black/10 dark:border-white/10">Rentang Tanggal</th>
+                            <th class="p-4 border-b border-black/10 dark:border-white/10">Alasan</th>
+                            <th class="p-4 border-b border-black/10 dark:border-white/10">Lampiran Bukti</th>
+                            <th class="p-4 border-b border-black/10 dark:border-white/10">Status</th>
+                            <th class="p-4 border-b border-black/10 dark:border-white/10 text-right">Tindakan</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-permits-table-body" class="divide-y divide-black/5 dark:divide-white/5">
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- MAIN VIEW 3: Bagan & Grafik Analisis -->
+        <div id="view-admin-charts" class="hidden space-y-6">
+            <!-- Global Class filter for dynamic statistics -->
+            <div class="glass p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                    <h3 class="text-sm font-black uppercase tracking-wider">Filter Analisis Grafik</h3>
+                    <p class="text-[10px] font-mono opacity-50">Saring sebaran data visualisasi di bawah berdasarkan tingkatan kelas</p>
+                </div>
+                <select id="admin-charts-class-filter" class="w-full sm:w-56 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-2.5 outline-none focus:border-emerald-500 text-xs font-bold text-inherit [&>option]:bg-white [&>option]:text-slate-800 dark:[&>option]:bg-slate-900 dark:[&>option]:text-white">
+                    <option value="Semua">Semua Kelas (Xe1 - Xe12)</option>
+                    <option value="Xe1">Xe1</option>
+                    <option value="Xe2">Xe2</option>
+                    <option value="Xe3">Xe3</option>
+                    <option value="Xe4">Xe4</option>
+                    <option value="Xe5">Xe5</option>
+                    <option value="Xe6">Xe6</option>
+                    <option value="Xe7">Xe7</option>
+                    <option value="Xe8">Xe8</option>
+                    <option value="Xe9">Xe9</option>
+                    <option value="Xe10">Xe10</option>
+                    <option value="Xe11">Xe11</option>
+                    <option value="Xe12">Xe12</option>
+                </select>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Bagan 1: Perbandingan per Kelas atau Tren Kelas harian -->
+                <div class="glass p-6 flex flex-col justify-between min-h-[400px]">
+                    <div>
+                        <h3 id="admin-chart-1-title" class="text-xs font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Absensi per Kelas</h3>
+                        <p id="admin-chart-1-desc" class="text-[10px] font-mono opacity-50 mb-4">Total siswa yang hadir di setiap tingkatan kelas</p>
+                    </div>
+                    <div class="flex-1 flex items-center justify-center relative w-full h-[250px]">
+                        <canvas id="admin-class-chart" class="max-h-[250px] max-w-full"></canvas>
+                    </div>
+                </div>
+
+                <!-- Bagan 2: Rasio Disiplin Global -->
+                <div class="glass p-6 flex flex-col justify-between min-h-[400px]">
+                    <div>
+                        <h3 class="text-xs font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Rasio Kehadiran Sekolah</h3>
+                        <p class="text-[10px] font-mono opacity-50 mb-4">Perbandingan Tepat Waktu, Terlambat & Izin disetujui</p>
+                    </div>
+                    <div class="flex-1 flex items-center justify-center relative w-full h-[250px]">
+                        <canvas id="admin-discipline-chart" class="max-h-[250px] max-w-full"></canvas>
+                    </div>
+                </div>
+
+                <!-- Bagan 3: Analisis Jenis Izin -->
+                <div class="glass p-6 flex flex-col justify-between min-h-[400px]">
+                    <div>
+                        <h3 class="text-xs font-black uppercase tracking-wider text-amber-500">Kategori Surat Keterangan</h3>
+                        <p class="text-[10px] font-mono opacity-50 mb-4">Pembagian alasan sakit, cuti, atau izin penting siswa</p>
+                    </div>
+                    <div class="flex-1 flex items-center justify-center relative w-full h-[250px]">
+                        <canvas id="admin-permits-chart" class="max-h-[250px] max-w-full"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- UI: KIOSK MODE -->
+    <div id="kiosk-mode" class="hidden w-full max-w-4xl mx-auto space-y-8 opacity-0 transition-all duration-700 py-4">
+        <header class="flex justify-between items-center border-b border-black/10 dark:border-white/10 pb-6">
+            <div>
+                <span class="px-2 py-1 bg-emerald-600 text-white text-[9px] font-black tracking-widest uppercase rounded">Mode Kios Kelas Aktif</span>
+                <h2 class="text-3xl font-black mt-1">Terminal Absensi Bersama</h2>
+            </div>
+            <button id="exit-kiosk-btn" class="px-5 py-3 rounded-xl bg-amber-600 text-white text-xs font-bold uppercase tracking-wider transition-all">
+                Keluar Mode Kios
+            </button>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Camera Feed (Left) -->
+            <div id="kiosk-cam-box" class="relative aspect-video glass overflow-hidden shadow-2xl rounded-3xl">
+                <video id="kiosk-webcam" autoplay playsinline class="w-full h-full object-cover brightness-110"></video>
+                <div class="scan-line"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent pointer-events-none"></div>
+                <div class="absolute bottom-4 left-4">
+                    <p id="kiosk-gps-text" class="text-[10px] font-mono text-white/90">MENUNGGU SATELIT...</p>
+                </div>
+            </div>
+
+            <!-- Fast Submission Form (Right) -->
+            <div class="glass p-8 flex flex-col justify-between space-y-6">
+                <div class="space-y-4">
+                    <h3 class="text-sm font-black uppercase tracking-wider">Silakan Masukkan Identitas Anda</h3>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold uppercase opacity-60">Nama Lengkap Siswa</label>
+                        <input id="kiosk-name" type="text" placeholder="Ketik nama lengkap Anda..." class="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 text-sm font-semibold text-inherit">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-bold uppercase opacity-60">ID / NIS</label>
+                            <input id="kiosk-id" type="text" placeholder="ID/NIS..." class="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 text-sm font-mono text-inherit">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-bold uppercase opacity-60">Kelas</label>
+                            <select id="kiosk-class" class="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 text-sm font-semibold text-inherit [&>option]:bg-white [&>option]:text-slate-800 dark:[&>option]:bg-slate-900 dark:[&>option]:text-white">
+                                <option value="" disabled selected>Pilih...</option>
+                                <option value="Xe1">Xe1</option>
+                                <option value="Xe2">Xe2</option>
+                                <option value="Xe3">Xe3</option>
+                                <option value="Xe4">Xe4</option>
+                                <option value="Xe5">Xe5</option>
+                                <option value="Xe6">Xe6</option>
+                                <option value="Xe7">Xe7</option>
+                                <option value="Xe8">Xe8</option>
+                                <option value="Xe9">Xe9</option>
+                                <option value="Xe10">Xe10</option>
+                                <option value="Xe11">Xe11</option>
+                                <option value="Xe12">Xe12</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="kiosk-submit-btn" class="w-full btn-primary text-white font-black py-4 rounded-xl uppercase tracking-widest flex items-center justify-center gap-2 shadow-xl">
+                    <span>Absen & Ambil Foto</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PERMIT DETAIL LIGHTBOX MODAL -->
+    <div id="permit-detail-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4 z-[110]">
+        <div class="glass max-w-lg w-full p-6 space-y-4 border border-black/10 dark:border-white/10 shadow-2xl overflow-y-auto max-h-[90vh] custom-scroll">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h4 id="detail-permit-title" class="text-lg font-black uppercase">Detail Surat Keterangan</h4>
+                    <p id="detail-permit-meta" class="text-xs text-gray-400 font-mono mt-0.5">---</p>
+                </div>
+                <button onclick="closePermitDetail()" class="px-3 py-1 bg-black/10 hover:bg-red-600 rounded-lg text-xs transition-all font-bold">X</button>
+            </div>
+            
+            <div class="space-y-3 text-sm">
+                <div class="grid grid-cols-2 gap-2 text-xs bg-black/5 dark:bg-white/5 p-3 rounded-xl border border-black/5 dark:border-white/5">
+                    <div>
+                        <span class="opacity-50">Jenis Izin:</span>
+                        <p id="detail-permit-type" class="font-bold">---</p>
+                    </div>
+                    <div>
+                        <span class="opacity-50">Durasi:</span>
+                        <p id="detail-permit-duration" class="font-bold">---</p>
+                    </div>
+                </div>
+                
+                <div class="bg-black/5 dark:bg-white/5 p-3 rounded-xl border border-black/5 dark:border-white/5">
+                    <span class="text-xs opacity-50">Alasan Detail:</span>
+                    <p id="detail-permit-reason" class="mt-1 italic">---</p>
+                </div>
+
+                <div class="space-y-1">
+                    <span class="text-xs opacity-50">Bukti Lampiran:</span>
+                    <div id="detail-permit-attachment-container" class="border border-black/10 dark:border-white/10 rounded-xl overflow-hidden aspect-video bg-black flex items-center justify-center">
+                        <img id="detail-permit-img" src="" alt="Lampiran" class="w-full h-full object-contain">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS for Maps -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        // State Management
+        let userData = { name: '', id: '', kelas: '' };
+        let currentPos = { lat: -6.200000, lng: 106.816666, acc: 15 };
+        const STORAGE_KEY = 'biosync_local_records';
+        const PERMIT_STORAGE_KEY = 'biosync_local_permits';
+        
+        let records = [];
+        let permits = [];
+        let activeWebcamStream = null;
+        let base64PermitAttachment = null;
+        let mapInstance = null;
+        let mapMarker = null;
+
+        // Keep track of ChartJS instances to destroy before recreating
+        let userDisciplineChartInstance = null;
+        let userPermitChartInstance = null;
+        let userCartesianChartInstance = null;
+        let adminClassChartInstance = null;
+        let adminDisciplineChartInstance = null;
+        let adminPermitsChartInstance = null;
+
+        // UI Selectors
+        const ui = {
+            authSection: document.getElementById('auth-section'),
+            tabUserBtn: document.getElementById('tab-user-btn'),
+            tabAdminBtn: document.getElementById('tab-admin-btn'),
+            formUser: document.getElementById('form-user'),
+            formAdmin: document.getElementById('form-admin'),
+            userName: document.getElementById('user-name'),
+            userId: document.getElementById('user-id'),
+            userClass: document.getElementById('user-class'),
+            adminPass: document.getElementById('admin-pass'),
+            loginBtn: document.getElementById('login-btn'),
+            loginAdminBtn: document.getElementById('login-admin-btn'),
+            toast: document.getElementById('toast'),
+            
+            // Dashboard Personel
+            dashboard: document.getElementById('dashboard'),
+            displayName: document.getElementById('display-name'),
+            displayId: document.getElementById('display-id'),
+            displayClass: document.getElementById('display-class'),
+            userInitial: document.getElementById('user-initial'),
+            clock: document.getElementById('clock'),
+            date: document.getElementById('date'),
+            statTotalPersonel: document.getElementById('stat-total-personel'),
+            statPermitPersonel: document.getElementById('stat-permit-personel'),
+            statAccuracy: document.getElementById('stat-accuracy'),
+            statAccuracyUnit: document.getElementById('stat-accuracy-unit'),
+            gpsText: document.getElementById('gps-text'),
+            gpsStatus: document.getElementById('gps-status'),
+            captureBtn: document.getElementById('capture-btn'),
+            camBox: document.getElementById('cam-box'),
+            webcam: document.getElementById('webcam'),
+            logListIndividual: document.getElementById('log-list-individual'),
+            logoutBtn: document.getElementById('logout-btn'),
+            themeBtn: document.getElementById('theme-btn'),
+
+            // Tabs inside User Dashboard
+            userTabBiometric: document.getElementById('user-tab-biometric'),
+            userTabPermits: document.getElementById('user-tab-permits'),
+            userTabStats: document.getElementById('user-tab-stats'),
+            viewUserBiometric: document.getElementById('view-user-biometric'),
+            viewUserPermits: document.getElementById('view-user-permits'),
+            viewUserStats: document.getElementById('view-user-stats'),
+
+            // User Permit Form Fields
+            permitType: document.getElementById('permit-type'),
+            permitFile: document.getElementById('permit-file'),
+            permitStartDate: document.getElementById('permit-start-date'),
+            permitEndDate: document.getElementById('permit-end-date'),
+            permitReason: document.getElementById('permit-reason'),
+            previewBox: document.getElementById('preview-box'),
+            permitImgPreview: document.getElementById('permit-img-preview'),
+            submitPermitBtn: document.getElementById('submit-permit-btn'),
+            permitListIndividual: document.getElementById('permit-list-individual'),
+
+            // Dashboard Admin
+            adminDashboard: document.getElementById('admin-dashboard'),
+            logoutAdminBtn: document.getElementById('logout-admin-btn'),
+            kioskModeBtn: document.getElementById('kiosk-mode-btn'),
+            adminStatTotal: document.getElementById('admin-stat-total'),
+            adminStatPermits: document.getElementById('admin-stat-permits'),
+            adminStatPending: document.getElementById('admin-stat-pending'),
+            adminStatGps: document.getElementById('admin-stat-gps'),
+            adminSearch: document.getElementById('admin-search'),
+            adminTableBody: document.getElementById('admin-table-body'),
+            adminUniqueList: document.getElementById('admin-unique-list'),
+            adminExportCsv: document.getElementById('admin-export-csv'),
+            adminExportJson: document.getElementById('admin-export-json'),
+            adminReset: document.getElementById('admin-reset'),
+            pendingAlertGlow: document.getElementById('pending-alert-glow'),
+
+            // Admin Settings & Export Filters
+            adminLateTimeLimit: document.getElementById('admin-late-time-limit'),
+            adminExportClassSelect: document.getElementById('admin-export-class-select'),
+
+            // Tabs inside Admin Dashboard
+            adminTabAttendance: document.getElementById('admin-tab-attendance'),
+            adminTabPermits: document.getElementById('admin-tab-permits'),
+            adminTabCharts: document.getElementById('admin-tab-charts'),
+            viewAdminAttendance: document.getElementById('view-admin-attendance'),
+            viewAdminPermits: document.getElementById('view-admin-permits'),
+            viewAdminCharts: document.getElementById('view-admin-charts'),
+            adminPermitsTableBody: document.getElementById('admin-permits-table-body'),
+            adminChartsClassFilter: document.getElementById('admin-charts-class-filter'),
+
+            // Lightbox Modal Permit Details
+            permitDetailModal: document.getElementById('permit-detail-modal'),
+            detailPermitTitle: document.getElementById('detail-permit-title'),
+            detailPermitMeta: document.getElementById('detail-permit-meta'),
+            detailPermitType: document.getElementById('detail-permit-type'),
+            detailPermitDuration: document.getElementById('detail-permit-duration'),
+            detailPermitReason: document.getElementById('detail-permit-reason'),
+            detailPermitImg: document.getElementById('detail-permit-img'),
+            detailPermitAttachmentContainer: document.getElementById('detail-permit-attachment-container'),
+
+            // Kiosk Mode
+            kioskMode: document.getElementById('kiosk-mode'),
+            kioskWebcam: document.getElementById('kiosk-webcam'),
+            kioskCamBox: document.getElementById('kiosk-cam-box'),
+            kioskGpsText: document.getElementById('kiosk-gps-text'),
+            kioskName: document.getElementById('kiosk-name'),
+            kioskId: document.getElementById('kiosk-id'),
+            kioskClass: document.getElementById('kiosk-class'),
+            kioskSubmitBtn: document.getElementById('kiosk-submit-btn'),
+            exitKioskBtn: document.getElementById('exit-kiosk-btn')
+        };
+
+        // Custom Toast System
+        function showToast(message, isError = false) {
+            ui.toast.innerText = message;
+            if (isError) {
+                ui.toast.className = "fixed top-6 left-1/2 -translate-x-1/2 z-[100] px-6 py-3.5 rounded-full glass text-sm font-bold transition-all duration-300 shadow-2xl flex items-center gap-2 border-red-500/30 text-red-500 bg-red-50/90 dark:bg-red-950/20";
+            } else {
+                ui.toast.className = "fixed top-6 left-1/2 -translate-x-1/2 z-[100] px-6 py-3.5 rounded-full glass text-sm font-bold transition-all duration-300 shadow-2xl flex items-center gap-2 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-50/90 dark:bg-emerald-950/20";
+            }
+            
+            ui.toast.classList.replace('opacity-0', 'opacity-100');
+            ui.toast.classList.replace('-translate-y-4', 'translate-y-0');
+            
+            setTimeout(() => {
+                ui.toast.classList.replace('opacity-100', 'opacity-0');
+                ui.toast.classList.replace('translate-y-0', '-translate-y-4');
+            }, 3000);
+        }
+
+        // Initialize GPS Location Engine
+        function initGPS() {
+            if (!navigator.geolocation) {
+                if(ui.gpsStatus) ui.gpsStatus.innerText = "⚠️ GPS TIDAK DIDUKUNG";
+                return;
+            }
+
+            navigator.geolocation.watchPosition(
+                (position) => {
+                    currentPos.lat = position.coords.latitude;
+                    currentPos.lng = position.coords.longitude;
+                    currentPos.acc = position.coords.accuracy;
+
+                    const coordStr = `LAT: ${currentPos.lat.toFixed(6)} | LNG: ${currentPos.lng.toFixed(6)}`;
+                    
+                    if(ui.gpsText) ui.gpsText.innerText = coordStr;
+                    if(ui.kioskGpsText) ui.kioskGpsText.innerText = coordStr;
+                    if(ui.gpsStatus) {
+                        ui.gpsStatus.innerText = "✓ SATELIT TERVERIFIKASI";
+                        ui.gpsStatus.className = "text-[9px] font-bold text-emerald-500 uppercase tracking-tighter mt-0.5";
+                    }
+                    
+                    if(ui.statAccuracy) {
+                        ui.statAccuracy.innerText = Math.round(currentPos.acc);
+                        ui.statAccuracy.className = "text-4xl font-black italic text-emerald-500";
+                    }
+                    if(ui.statAccuracyUnit) ui.statAccuracyUnit.className = "text-[9px] font-bold text-emerald-500/60 uppercase";
+
+                    // Update Leaflet Map dynamically
+                    renderLeafletMap(currentPos.lat, currentPos.lng);
+                },
+                (error) => {
+                    let errorMsg = "IZIN LOKASI DITOLAK";
+                    if (error.code === 2) errorMsg = "SINYAL GPS LEMAH";
+                    if (error.code === 3) errorMsg = "TIMEOUT PENCARIAN GPS";
+                    
+                    if(ui.gpsStatus) {
+                        ui.gpsStatus.innerText = `⚠️ ${errorMsg}`;
+                        ui.gpsStatus.className = "text-[9px] font-bold text-amber-500 uppercase tracking-tighter mt-0.5";
+                    }
+                    
+                    if(ui.statAccuracy) {
+                        ui.statAccuracy.innerText = "--";
+                        ui.statAccuracy.className = "text-4xl font-black italic text-amber-500";
+                    }
+                },
+                { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+            );
+        }
+
+        // Render Leaflet Map container gracefully
+        function renderLeafletMap(lat, lng) {
+            const mapEl = document.getElementById('map');
+            if (!mapEl) return;
+            try {
+                if (!mapInstance) {
+                    mapInstance = L.map('map').setView([lat, lng], 15);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        maxZoom: 19,
+                        attribution: '© OpenStreetMap'
+                    }).addTo(mapInstance);
+                    mapMarker = L.marker([lat, lng]).addTo(mapInstance);
+                } else {
+                    mapInstance.setView([lat, lng], 15);
+                    mapMarker.setLatLng([lat, lng]);
+                }
+            } catch (err) {
+                console.warn("Leaflet Map loading failed or is already initialized:", err);
+            }
+        }
+
+        // Initialize Webcam Device
+        async function initWebcam(videoElement, targetBox) {
+            stopWebcam();
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } 
+                });
+                activeWebcamStream = stream;
+                videoElement.srcObject = stream;
+                videoElement.style.display = "block";
+            } catch (error) {
+                showToast("Kamera gagal dimuat atau izin ditolak", true);
+                videoElement.style.display = "none";
+                const placeholder = document.createElement('div');
+                placeholder.id = "cam-fallback";
+                placeholder.className = "absolute inset-0 flex flex-col items-center justify-center text-center p-6 bg-slate-900/40";
+                placeholder.innerHTML = `
+                    <svg class="w-16 h-16 text-red-500 opacity-60 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                    <p class="text-sm font-bold uppercase opacity-80 text-white">AKSES KAMERA DINONAKTIFKAN</p>
+                    <p class="text-[10px] opacity-50 text-white max-w-xs mt-1">Harap aktifkan izin kamera di pengaturan browser Anda.</p>
+                `;
+                targetBox.appendChild(placeholder);
+            }
+        }
+
+        function stopWebcam() {
+            if (activeWebcamStream) {
+                activeWebcamStream.getTracks().forEach(track => track.stop());
+                activeWebcamStream = null;
+            }
+            const fallback = document.getElementById('cam-fallback');
+            if (fallback) fallback.remove();
+        }
+
+        // Compressed Canvas Image Capture (~2-3 KB JPEG)
+        function captureAndCompressPhoto(videoElement) {
+            try {
+                const tempCanvas = document.createElement('canvas');
+                // Highly compressed low-res aspect ratio
+                tempCanvas.width = 160;
+                tempCanvas.height = 120;
+                const ctx = tempCanvas.getContext('2d');
+                // Apply mirror transformation to match mirrored video feed
+                ctx.translate(tempCanvas.width, 0);
+                ctx.scale(-1, 1);
+                ctx.drawImage(videoElement, 0, 0, tempCanvas.width, tempCanvas.height);
+                return tempCanvas.toDataURL('image/jpeg', 0.4); // 40% JPEG quality
+            } catch (e) {
+                console.error("Gagal capture/kompres foto:", e);
+                return null;
+            }
+        }
+
+        // Tab switching logic (User / Admin)
+        ui.tabUserBtn.onclick = () => {
+            ui.tabUserBtn.className = "flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider bg-emerald-600/20 text-emerald-600 transition-all";
+            ui.tabAdminBtn.className = "flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-black/5 dark:hover:bg-white/5 transition-all";
+            ui.formUser.classList.remove('hidden');
+            ui.formAdmin.classList.add('hidden');
+        };
+
+        ui.tabAdminBtn.onclick = () => {
+            ui.tabAdminBtn.className = "flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider bg-emerald-600/20 text-emerald-600 transition-all";
+            ui.tabUserBtn.className = "flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-black/5 dark:hover:bg-white/5 transition-all";
+            ui.formAdmin.classList.remove('hidden');
+            ui.formUser.classList.add('hidden');
+        };
+
+        // User Tabs (Biometric vs Leave Permits vs Personal Charts)
+        ui.userTabBiometric.onclick = () => {
+            ui.userTabBiometric.className = "flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider bg-emerald-600/20 text-emerald-600 transition-all";
+            ui.userTabPermits.className = "flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-black/5 dark:hover:bg-white/5 transition-all";
+            ui.userTabStats.className = "flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-black/5 dark:hover:bg-white/5 transition-all";
+            ui.viewUserBiometric.classList.remove('hidden');
+            ui.viewUserPermits.classList.add('hidden');
+            ui.viewUserStats.classList.add('hidden');
+            initWebcam(ui.webcam, ui.camBox);
+            setTimeout(() => { if (mapInstance) mapInstance.invalidateSize(); }, 200);
+        };
+
+        ui.userTabPermits.onclick = () => {
+            ui.userTabPermits.className = "flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider bg-emerald-600/20 text-emerald-600 transition-all";
+            ui.userTabBiometric.className = "flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-black/5 dark:hover:bg-white/5 transition-all";
+            ui.userTabStats.className = "flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-black/5 dark:hover:bg-white/5 transition-all";
+            ui.viewUserPermits.classList.remove('hidden');
+            ui.viewUserBiometric.classList.add('hidden');
+            ui.viewUserStats.classList.add('hidden');
+            stopWebcam();
+        };
+
+        ui.userTabStats.onclick = () => {
+            ui.userTabStats.className = "flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider bg-emerald-600/20 text-emerald-600 transition-all";
+            ui.userTabBiometric.className = "flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-black/5 dark:hover:bg-white/5 transition-all";
+            ui.userTabPermits.className = "flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-black/5 dark:hover:bg-white/5 transition-all";
+            ui.viewUserStats.classList.remove('hidden');
+            ui.viewUserBiometric.classList.add('hidden');
+            ui.viewUserPermits.classList.add('hidden');
+            stopWebcam();
+            renderUserCharts();
+        };
+
+        // Admin Tabs (Attendance vs Permits vs Global Charts)
+        ui.adminTabAttendance.onclick = () => {
+            ui.adminTabAttendance.className = "flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider bg-emerald-600/20 text-emerald-600 transition-all";
+            ui.adminTabPermits.className = "flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-black/5 dark:hover:bg-white/5 transition-all";
+            ui.adminTabCharts.className = "flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-black/5 dark:hover:bg-white/5 transition-all";
+            ui.viewAdminAttendance.classList.remove('hidden');
+            ui.viewAdminPermits.classList.add('hidden');
+            ui.viewAdminCharts.classList.add('hidden');
+        };
+
+        ui.adminTabPermits.onclick = () => {
+            ui.adminTabPermits.className = "flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider bg-emerald-600/20 text-emerald-600 transition-all";
+            ui.adminTabAttendance.className = "flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-black/5 dark:hover:bg-white/5 transition-all";
+            ui.adminTabCharts.className = "flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-black/5 dark:hover:bg-white/5 transition-all";
+            ui.viewAdminPermits.classList.remove('hidden');
+            ui.viewAdminAttendance.classList.add('hidden');
+            ui.viewAdminCharts.classList.add('hidden');
+        };
+
+        ui.adminTabCharts.onclick = () => {
+            ui.adminTabCharts.className = "flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider bg-emerald-600/20 text-emerald-600 transition-all";
+            ui.adminTabAttendance.className = "flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-black/5 dark:hover:bg-white/5 transition-all";
+            ui.adminTabPermits.className = "flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-black/5 dark:hover:bg-white/5 transition-all";
+            ui.viewAdminCharts.classList.remove('hidden');
+            ui.viewAdminAttendance.classList.add('hidden');
+            ui.viewAdminPermits.classList.add('hidden');
+            renderAdminCharts();
+        };
+
+        // Trigger dynamic metrics update on stats filter changes
+        ui.adminChartsClassFilter.onchange = () => {
+            renderAdminCharts();
+        };
+
+        // Handle User Login
+        ui.loginBtn.onclick = () => {
+            const nameValue = ui.userName.value.trim();
+            const idValue = ui.userId.value.trim();
+            const classValue = ui.userClass.value;
+
+            if (!nameValue || !idValue || !classValue) {
+                showToast("Mohon lengkapi Nama, NIS, & Kelas Anda!", true);
+                return;
+            }
+
+            userData = { name: nameValue, id: idValue, kelas: classValue };
+            
+            ui.authSection.classList.add('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                ui.authSection.classList.add('hidden');
+                ui.dashboard.classList.remove('hidden');
+                setTimeout(() => {
+                    ui.dashboard.classList.add('opacity-100');
+                    document.body.classList.remove('flex', 'items-center', 'justify-center');
+                }, 50);
+            }, 500);
+
+            ui.displayName.innerText = userData.name;
+            ui.displayId.innerText = `NIS: ${userData.id}`;
+            ui.displayClass.innerText = `Kelas: ${userData.kelas}`;
+            ui.userInitial.innerText = userData.name.charAt(0).toUpperCase();
+
+            initGPS();
+            initWebcam(ui.webcam, ui.camBox);
+            loadRecords();
+            loadPermits();
+            showToast("Identitas Terverifikasi. Selamat Belajar!");
+        };
+
+        // Handle Admin Login
+        ui.loginAdminBtn.onclick = () => {
+            const pass = ui.adminPass.value.trim();
+
+            if (pass === "admin123") {
+                ui.authSection.classList.add('opacity-0', 'pointer-events-none');
+                setTimeout(() => {
+                    ui.authSection.classList.add('hidden');
+                    ui.adminDashboard.classList.remove('hidden');
+                    setTimeout(() => {
+                        ui.adminDashboard.classList.add('opacity-100');
+                        document.body.classList.remove('flex', 'items-center', 'justify-center');
+                    }, 50);
+                }, 500);
+
+                loadRecords();
+                loadPermits();
+                renderAdminDashboard();
+                showToast("Akses Administrator Terbuka.");
+            } else {
+                showToast("Kata Sandi Admin Salah!", true);
+            }
+        };
+
+        // Logouts
+        ui.logoutBtn.onclick = () => {
+            stopWebcam();
+            ui.dashboard.classList.add('opacity-0');
+            setTimeout(() => {
+                ui.dashboard.classList.add('hidden');
+                ui.authSection.classList.remove('hidden', 'opacity-0', 'pointer-events-none');
+                document.body.classList.add('p-4', 'md:p-8', 'flex', 'items-center', 'justify-center');
+                ui.userTabBiometric.click(); // Reset tab to biometric
+            }, 500);
+        };
+
+        ui.logoutAdminBtn.onclick = () => {
+            ui.adminDashboard.classList.add('opacity-0');
+            setTimeout(() => {
+                ui.adminDashboard.classList.add('hidden');
+                ui.authSection.classList.remove('hidden', 'opacity-0', 'pointer-events-none');
+                document.body.classList.add('p-4', 'md:p-8', 'flex', 'items-center', 'justify-center');
+                ui.adminTabAttendance.click(); // Reset tab to attendance
+            }, 500);
+        };
+
+        // Kiosk Mode Toggle Navigation
+        ui.kioskModeBtn.onclick = () => {
+            ui.adminDashboard.classList.add('opacity-0');
+            setTimeout(() => {
+                ui.adminDashboard.classList.add('hidden');
+                ui.kioskMode.classList.remove('hidden');
+                setTimeout(() => {
+                    ui.kioskMode.classList.add('opacity-100');
+                }, 50);
+                initGPS();
+                initWebcam(ui.kioskWebcam, ui.kioskCamBox);
+            }, 500);
+        };
+
+        ui.exitKioskBtn.onclick = () => {
+            stopWebcam();
+            ui.kioskMode.classList.add('opacity-0');
+            setTimeout(() => {
+                ui.kioskMode.classList.add('hidden');
+                ui.adminDashboard.classList.remove('hidden');
+                setTimeout(() => {
+                    ui.adminDashboard.classList.add('opacity-100');
+                }, 50);
+                renderAdminDashboard();
+            }, 500);
+        };
+
+        // Save Custom Attendance Time Rule Limit
+        ui.adminLateTimeLimit.onchange = () => {
+            localStorage.setItem('biosync_settings_late_time', ui.adminLateTimeLimit.value);
+            showToast("Batas jam masuk berhasil diperbarui!");
+            renderAdminDashboard();
+        };
+
+        // Local Permit File Input (Base64 convertor)
+        ui.permitFile.onchange = (event) => {
+            const file = event.target.files[0];
+            if (!file) {
+                base64PermitAttachment = null;
+                ui.previewBox.classList.add('hidden');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                base64PermitAttachment = e.target.result;
+                ui.permitImgPreview.src = base64PermitAttachment;
+                ui.previewBox.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        };
+
+        // Database engines
+        function loadRecords() {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            records = raw ? JSON.parse(raw) : [];
+            renderIndividualLogs();
+        }
+
+        function loadPermits() {
+            const raw = localStorage.getItem(PERMIT_STORAGE_KEY);
+            permits = raw ? JSON.parse(raw) : [];
+            renderIndividualPermits();
+        }
+
+        function saveRecords() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+            } catch (e) {
+                if (e.name === 'QuotaExceededError') {
+                    showToast("Penyimpanan lokal penuh! Menghapus beberapa data lawas.", true);
+                    // Discard oldest 5 records with photos to free up quota space
+                    records = records.slice(0, records.length - 5);
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+                }
+            }
+            renderIndividualLogs();
+        }
+
+        function savePermits() {
+            try {
+                localStorage.setItem(PERMIT_STORAGE_KEY, JSON.stringify(permits));
+            } catch (e) {
+                if (e.name === 'QuotaExceededError') {
+                    showToast("Penyimpanan perizinan penuh!", true);
+                }
+            }
+            renderIndividualPermits();
+        }
+
+        // Attendance Actions (Personel Biometric Capture)
+        ui.captureBtn.onclick = () => {
+            ui.captureBtn.disabled = true;
+            ui.camBox.classList.add('active-scan');
+            showToast("Memproses data biometrik...");
+
+            // Take highly optimized photo to prevent quota crashes
+            const compressedPhoto = captureAndCompressPhoto(ui.webcam);
+
+            setTimeout(() => {
+                const now = new Date();
+                
+                // Process dynamic lateness detection
+                const ruleTime = localStorage.getItem('biosync_settings_late_time') || '07:15';
+                const [ruleHrs, ruleMins] = ruleTime.split(':').map(Number);
+                const isLate = (now.getHours() > ruleHrs) || (now.getHours() === ruleHrs && now.getMinutes() > ruleMins);
+                const statusStr = isLate ? 'Terlambat' : 'Tepat Waktu';
+
+                const newRecord = {
+                    id: 'REC_' + Date.now(),
+                    nama: userData.name,
+                    id_peserta: userData.id,
+                    kelas: userData.kelas,
+                    timestamp: now.toISOString(),
+                    lat: currentPos.lat,
+                    lng: currentPos.lng,
+                    accuracy: currentPos.acc || 15,
+                    status: statusStr,
+                    photo: compressedPhoto
+                };
+
+                records.unshift(newRecord);
+                saveRecords();
+
+                ui.camBox.classList.remove('active-scan');
+                ui.captureBtn.disabled = false;
+                showToast(`✓ Presensi Terekam (${statusStr})!`);
+            }, 1800);
+        };
+
+        // Submit Leave Permit Request Action
+        ui.submitPermitBtn.onclick = () => {
+            const type = ui.permitType.value;
+            const startDate = ui.permitStartDate.value;
+            const endDate = ui.permitEndDate.value;
+            const reason = ui.permitReason.value.trim();
+
+            if (!startDate || !endDate || !reason) {
+                showToast("Harap isi semua tanggal dan alasan pengajuan!", true);
+                return;
+            }
+
+            if (new Date(startDate) > new Date(endDate)) {
+                showToast("Tanggal mulai tidak boleh melebihi tanggal selesai!", true);
+                return;
+            }
+
+            ui.submitPermitBtn.disabled = true;
+            showToast("Mengirim pengajuan izin...");
+
+            setTimeout(() => {
+                const now = new Date();
+                const newPermit = {
+                    id: 'PERMIT_' + Date.now(),
+                    nama: userData.name,
+                    id_peserta: userData.id,
+                    kelas: userData.kelas,
+                    tipe: type,
+                    tanggal_mulai: startDate,
+                    tanggal_selesai: endDate,
+                    alasan: reason,
+                    attachment: base64PermitAttachment || null,
+                    status: 'Menunggu',
+                    timestamp: now.toISOString()
+                };
+
+                permits.unshift(newPermit);
+                savePermits();
+
+                // Clear fields
+                ui.permitStartDate.value = "";
+                ui.permitEndDate.value = "";
+                ui.permitReason.value = "";
+                ui.permitFile.value = "";
+                ui.previewBox.classList.add('hidden');
+                base64PermitAttachment = null;
+
+                ui.submitPermitBtn.disabled = false;
+                showToast("✓ Pengajuan Surat Izin berhasil dikirim!");
+            }, 1000);
+        };
+
+        // Attendance Actions (Kiosk Mode)
+        ui.kioskSubmitBtn.onclick = () => {
+            const kname = ui.kioskName.value.trim();
+            const kid = ui.kioskId.value.trim();
+            const kclass = ui.kioskClass.value;
+
+            if (!kname || !kid || !kclass) {
+                showToast("Isi Nama, ID, & Kelas Terlebih dahulu!", true);
+                return;
+            }
+
+            ui.kioskSubmitBtn.disabled = true;
+            ui.kioskCamBox.classList.add('active-scan');
+            showToast("Memproses presensi kios...");
+
+            const compressedPhoto = captureAndCompressPhoto(ui.kioskWebcam);
+
+            setTimeout(() => {
+                const now = new Date();
+                
+                // Process dynamic lateness detection
+                const ruleTime = localStorage.getItem('biosync_settings_late_time') || '07:15';
+                const [ruleHrs, ruleMins] = ruleTime.split(':').map(Number);
+                const isLate = (now.getHours() > ruleHrs) || (now.getHours() === ruleHrs && now.getMinutes() > ruleMins);
+                const statusStr = isLate ? 'Terlambat' : 'Tepat Waktu';
+
+                const newRecord = {
+                    id: 'REC_' + Date.now(),
+                    nama: kname,
+                    id_peserta: kid,
+                    kelas: kclass,
+                    timestamp: now.toISOString(),
+                    lat: currentPos.lat,
+                    lng: currentPos.lng,
+                    accuracy: currentPos.acc || 15,
+                    status: statusStr,
+                    photo: compressedPhoto
+                };
+
+                records.unshift(newRecord);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+
+                ui.kioskCamBox.classList.remove('active-scan');
+                ui.kioskSubmitBtn.disabled = false;
+                
+                ui.kioskName.value = "";
+                ui.kioskId.value = "";
+                ui.kioskClass.value = "";
+
+                showToast(`✓ Presensi ${kname} (${kclass}) Terekam Berhasil (${statusStr})!`);
+            }, 1500);
+        };
+
+        // Helper: Get fallback status for older records
+        function getRecordStatus(rec) {
+            if (rec.status) return rec.status;
+            const dateObj = new Date(rec.timestamp);
+            const ruleTime = localStorage.getItem('biosync_settings_late_time') || '07:15';
+            const [ruleHrs, ruleMins] = ruleTime.split(':').map(Number);
+            const isLate = (dateObj.getHours() > ruleHrs) || (dateObj.getHours() === ruleHrs && dateObj.getMinutes() > ruleMins);
+            return isLate ? 'Terlambat' : 'Tepat Waktu';
+        }
+
+        // Render logs specifically for the logged-in individual
+        function renderIndividualLogs() {
+            const personalLogs = records.filter(r => r.id_peserta === userData.id);
+            ui.statTotalPersonel.innerText = personalLogs.length;
+
+            if (personalLogs.length === 0) {
+                ui.logListIndividual.innerHTML = `
+                    <div class="text-center py-20 opacity-30 italic text-xs tracking-widest">
+                        Belum ada riwayat presensi lokal Anda.
+                    </div>
+                `;
+                return;
+            }
+
+            ui.logListIndividual.innerHTML = personalLogs.map(x => {
+                const dateObj = new Date(x.timestamp);
+                const formatTime = dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                const formatDate = dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+                const loc = (x.lat && x.lng) ? `${x.lat.toFixed(4)}, ${x.lng.toFixed(4)}` : "Tanpa GPS";
+                
+                const recStatus = getRecordStatus(x);
+                const badgeColor = recStatus === 'Tepat Waktu' ? 'bg-emerald-600/10 text-emerald-600 border-emerald-500/10' : 'bg-red-600/10 text-red-500 border-red-500/10';
+
+                return `
+                    <div class="p-4 glass border border-black/5 dark:border-white/5 flex items-center justify-between gap-4 group">
+                        <div class="flex items-center gap-3 overflow-hidden">
+                            <div class="w-10 h-10 rounded-xl bg-black/5 dark:bg-white/5 overflow-hidden shrink-0 border border-black/5 dark:border-white/5 flex items-center justify-center">
+                                ${x.photo ? `<img src="${x.photo}" class="w-full h-full object-cover">` : `<span class="text-[10px] text-gray-400">👤</span>`}
+                            </div>
+                            <div class="overflow-hidden space-y-0.5">
+                                <p class="text-[11px] font-black uppercase tracking-wide truncate">${x.nama} [${x.kelas || 'N/A'}]</p>
+                                <p class="text-[9px] font-mono opacity-50 uppercase">${formatDate} • ${formatTime}</p>
+                                <p class="text-[9px] font-mono text-emerald-600 opacity-80 mb-1">📍 GPS: ${loc}</p>
+                                <span class="inline-block px-1.5 py-0.5 text-[8px] font-bold rounded border ${badgeColor}">${recStatus}</span>
+                            </div>
+                        </div>
+                        <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-lg shrink-0"></div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Render permits specifically for the logged-in individual
+        function renderIndividualPermits() {
+            const personalPermits = permits.filter(p => p.id_peserta === userData.id);
+            ui.statPermitPersonel.innerText = personalPermits.length;
+
+            if (personalPermits.length === 0) {
+                ui.permitListIndividual.innerHTML = `
+                    <div class="text-center py-20 opacity-30 italic text-xs tracking-widest">
+                        Belum ada pengajuan izin terkirim.
+                    </div>
+                `;
+                return;
+            }
+
+            ui.permitListIndividual.innerHTML = personalPermits.map(x => {
+                let badgeClass = "bg-amber-600/20 text-amber-500 border-amber-500/10";
+                if (x.status === "Disetujui") badgeClass = "bg-emerald-600/20 text-emerald-600 border-emerald-500/10";
+                if (x.status === "Ditolak") badgeClass = "bg-red-600/20 text-red-500 border-red-500/10";
+
+                const start = new Date(x.tanggal_mulai).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+                const end = new Date(x.tanggal_selesai).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+
+                return `
+                    <div class="p-4 glass border border-black/5 dark:border-white/5 space-y-2 relative group">
+                        <div class="flex justify-between items-start gap-2">
+                            <div>
+                                <span class="px-2 py-0.5 text-[8px] font-black uppercase tracking-widest rounded-full bg-emerald-600/10 text-emerald-600 border border-emerald-500/10">${x.tipe}</span>
+                                <p class="text-[10px] font-mono opacity-50 uppercase mt-1">${start} - ${end}</p>
+                            </div>
+                            <span class="px-2 py-1 text-[8px] font-black uppercase tracking-widest rounded-md border ${badgeClass}">
+                                ${x.status}
+                            </span>
+                        </div>
+                        <p class="text-[11px] opacity-70 italic line-clamp-2">"${x.alasan}"</p>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Render Graphical Charts for the Logged-in Student (Personal Statistics)
+        function renderUserCharts() {
+            // Filter records and permits for current logged-in user
+            const personalLogs = records.filter(r => r.id_peserta === userData.id);
+            const personalPermitsApproved = permits.filter(p => p.id_peserta === userData.id && p.status === "Disetujui");
+
+            // 1. Calculate discipline (On-Time vs Late) dynamically
+            let onTimeCount = 0;
+            let lateCount = 0;
+
+            personalLogs.forEach(r => {
+                const recStatus = getRecordStatus(r);
+                if (recStatus === 'Tepat Waktu') onTimeCount++;
+                else lateCount++;
+            });
+
+            // Destroy existing instances if any
+            if (userDisciplineChartInstance) userDisciplineChartInstance.destroy();
+            if (userPermitChartInstance) userPermitChartInstance.destroy();
+            if (userCartesianChartInstance) userCartesianChartInstance.destroy();
+
+            // Set up font colors dynamically based on light/dark mode
+            const isDark = document.body.classList.contains('dark-mode');
+            const isLight = !isDark;
+            const textColor = isLight ? '#334155' : '#cbd5e1';
+            const gridColor = isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)';
+
+            try {
+                // Chart 1: Discipline Doughnut
+                const ctxDiscipline = document.getElementById('user-discipline-chart').getContext('2d');
+                userDisciplineChartInstance = new Chart(ctxDiscipline, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Tepat Waktu', 'Terlambat'],
+                        datasets: [{
+                            data: [onTimeCount, lateCount],
+                            backgroundColor: ['#10b981', '#ef4444'],
+                            borderColor: isLight ? '#ffffff' : '#1e293b',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { color: textColor, font: { family: 'Plus Jakarta Sans', size: 10 } }
+                            }
+                        }
+                    }
+                });
+
+                // Chart 2: Absence vs Leave Ratio Pie
+                const totalAbsen = personalLogs.length;
+                const totalIzin = personalPermitsApproved.length;
+
+                const ctxRatio = document.getElementById('user-permit-ratio-chart').getContext('2d');
+                userPermitChartInstance = new Chart(ctxRatio, {
+                    type: 'pie',
+                    data: {
+                        labels: ['Absen Wajah', 'Surat Izin'],
+                        datasets: [{
+                            data: [totalAbsen, totalIzin],
+                            backgroundColor: ['#10b981', '#f59e0b'],
+                            borderColor: isLight ? '#ffffff' : '#1e293b',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { color: textColor, font: { family: 'Plus Jakarta Sans', size: 10 } }
+                            }
+                        }
+                    }
+                });
+
+                // Chart 3: Cartesian / Line Plot (Dates vs Hours of Attendance)
+                const chronologicalLogs = [...personalLogs]
+                    .reverse() // Oldest to newest
+                    .slice(-7); // Last 7 records
+
+                const cartesianDates = chronologicalLogs.map(r => {
+                    const d = new Date(r.timestamp);
+                    return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+                });
+
+                const cartesianHours = chronologicalLogs.map(r => {
+                    const d = new Date(r.timestamp);
+                    return d.getHours() + (d.getMinutes() / 60); // Decimal representation (e.g., 7.50 is 07:30)
+                });
+
+                // FIX PREVIOUS CRITICAL REFERENCEERROR: Use cartesian variables instead of hoursData in ternary check
+                const datesData = cartesianDates.length > 0 ? cartesianDates : ['12 Mei', '13 Mei', '14 Mei', '15 Mei', '16 Mei', '17 Mei', '18 Mei'];
+                const hoursData = cartesianHours.length > 0 ? cartesianHours : [7.2, 7.4, 7.8, 7.1, 8.2, 7.5, 7.3];
+
+                const ctxCartesian = document.getElementById('user-cartesian-chart').getContext('2d');
+                userCartesianChartInstance = new Chart(ctxCartesian, {
+                    type: 'line',
+                    data: {
+                        labels: datesData,
+                        datasets: [{
+                            label: 'Jam Masuk (Format Desimal)',
+                            data: hoursData,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                            fill: true,
+                            tension: 0.3,
+                            borderWidth: 3,
+                            pointBackgroundColor: '#10b981',
+                            pointBorderColor: isLight ? '#ffffff' : '#1e293b',
+                            pointRadius: 5,
+                            pointHoverRadius: 7
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: { color: textColor, font: { family: 'Plus Jakarta Sans', size: 10 } }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const val = context.parsed.y;
+                                        const hrs = Math.floor(val);
+                                        const mins = Math.round((val - hrs) * 60);
+                                        return `Jam: ${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                ticks: { color: textColor, font: { family: 'Plus Jakarta Sans', size: 9 } },
+                                grid: { color: gridColor }
+                            },
+                            y: {
+                                ticks: { 
+                                    color: textColor, 
+                                    font: { family: 'Plus Jakarta Sans', size: 9 },
+                                    callback: function(value) {
+                                        return String(Math.floor(value)).padStart(2, '0') + ':00';
+                                    }
+                                },
+                                grid: { color: gridColor },
+                                suggestedMin: 6,
+                                suggestedMax: 10
+                            }
+                        }
+                    }
+                });
+            } catch (err) {
+                console.error("Gagal menggambar chart siswa:", err);
+            }
+        }
+
+        // Admin Dashboard Core Rendering Engine
+        function renderAdminDashboard() {
+            const totalRecords = records.length;
+            
+            const gpsAvgs = records.filter(r => r.accuracy > 0);
+            const avgGps = gpsAvgs.length > 0 ? Math.round(gpsAvgs.reduce((acc, cur) => acc + cur.accuracy, 0) / gpsAvgs.length) : "--";
+
+            // Permit calculations
+            const totalApprovedPermits = permits.filter(p => p.status === "Disetujui").length;
+            const pendingPermits = permits.filter(p => p.status === "Menunggu").length;
+
+            ui.adminStatTotal.innerText = totalRecords;
+            ui.adminStatPermits.innerText = totalApprovedPermits;
+            ui.adminStatPending.innerText = pendingPermits;
+            ui.adminStatGps.innerText = avgGps;
+
+            if (pendingPermits > 0) {
+                ui.pendingAlertGlow.classList.remove('hidden');
+            } else {
+                ui.pendingAlertGlow.classList.add('hidden');
+            }
+
+            // Sync dyn settings value
+            const savedLateTime = localStorage.getItem('biosync_settings_late_time') || '07:15';
+            ui.adminLateTimeLimit.value = savedLateTime;
+
+            renderAdminTable();
+            renderAdminPermitsTable();
+            renderUniqueEmployeeList();
+            
+            // Re-render admin charts if the charts view is active
+            if (!ui.viewAdminCharts.classList.contains('hidden')) {
+                renderAdminCharts();
+            }
+        }
+
+        ui.adminSearch.oninput = () => {
+            renderAdminTable();
+        };
+
+        // Render attendance logs list inside admin portal
+        function renderAdminTable() {
+            const query = ui.adminSearch.value.toLowerCase().trim();
+            const filtered = records.filter(r => 
+                r.nama.toLowerCase().includes(query) || 
+                r.id_peserta.toLowerCase().includes(query) ||
+                (r.kelas && r.kelas.toLowerCase().includes(query))
+            );
+
+            if (filtered.length === 0) {
+                ui.adminTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="p-8 text-center text-xs opacity-40 italic">Tidak ditemukan rekor data yang cocok.</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            ui.adminTableBody.innerHTML = filtered.map(x => {
+                const dateObj = new Date(x.timestamp);
+                const formatTime = dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                const formatDate = dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                const loc = (x.lat && x.lng) ? `${x.lat.toFixed(4)}, ${x.lng.toFixed(4)}` : "Tanpa GPS";
+                
+                const recStatus = getRecordStatus(x);
+                const badgeColor = recStatus === 'Tepat Waktu' ? 'bg-emerald-600/10 text-emerald-600 border-emerald-500/10' : 'bg-red-600/10 text-red-500 border-red-500/10';
+
+                return `
+                    <tr class="hover:bg-black/5 dark:hover:bg-white/5 transition-all">
+                        <td class="p-4 truncate max-w-[200px]">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 rounded-lg bg-black/5 dark:bg-white/5 overflow-hidden shrink-0 border border-black/5 dark:border-white/5 flex items-center justify-center">
+                                    ${x.photo ? `<img src="${x.photo}" class="w-full h-full object-cover">` : `<span class="text-xs">👤</span>`}
+                                </div>
+                                <div class="truncate">
+                                    <p class="font-bold text-sm truncate">${x.nama}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="p-4 font-mono text-[11px] opacity-70">${x.id_peserta}</td>
+                        <td class="p-4 font-bold text-sm text-emerald-600">${x.kelas || 'N/A'}</td>
+                        <td class="p-4">
+                            <span class="inline-block px-1.5 py-0.5 text-[8px] font-bold rounded border ${badgeColor}">${recStatus}</span>
+                        </td>
+                        <td class="p-4 text-[11px]">
+                            <span class="block font-semibold">${formatDate}</span>
+                            <span class="text-[9px] opacity-40 font-mono">${formatTime}</span>
+                        </td>
+                        <td class="p-4 font-mono text-[10px] text-emerald-600">
+                            📍 ${loc}
+                            <span class="block text-[8px] opacity-40">Akurasi: ${Math.round(x.accuracy)}m</span>
+                        </td>
+                        <td class="p-4 text-right">
+                            <button onclick="adminDeleteRecord('${x.id}')" class="p-2 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white rounded-lg transition-all" title="Hapus log ini">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Render permits management list inside admin portal
+        function renderAdminPermitsTable() {
+            if (permits.length === 0) {
+                ui.adminPermitsTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="p-8 text-center text-xs opacity-40 italic">Belum ada pengajuan izin masuk.</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            ui.adminPermitsTableBody.innerHTML = permits.map(x => {
+                const start = new Date(x.tanggal_mulai).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+                const end = new Date(x.tanggal_selesai).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+
+                let badgeClass = "bg-amber-600/20 text-amber-500 border-amber-500/10";
+                if (x.status === "Disetujui") badgeClass = "bg-emerald-600/20 text-emerald-600 border-emerald-500/10";
+                if (x.status === "Ditolak") badgeClass = "bg-red-600/20 text-red-500 border-red-500/10";
+
+                const hasAttachment = x.attachment ? 'inline-block' : 'hidden';
+
+                return `
+                    <tr class="hover:bg-black/5 dark:hover:bg-white/5 transition-all">
+                        <td class="p-4">
+                            <span class="block font-bold">${x.nama} <span class="text-xs text-emerald-600">(${x.kelas || 'N/A'})</span></span>
+                            <span class="text-[9px] font-mono opacity-50">NIS: ${x.id_peserta}</span>
+                        </td>
+                        <td class="p-4">
+                            <span class="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider rounded bg-emerald-600/10 text-emerald-600 border border-emerald-500/10">${x.tipe}</span>
+                        </td>
+                        <td class="p-4 font-mono text-[10px]">${start} <span class="opacity-50">s/d</span> ${end}</td>
+                        <td class="p-4 max-w-xs truncate italic" title="${x.alasan}">"${x.alasan}"</td>
+                        <td class="p-4">
+                            <button onclick="viewPermitAttachment('${x.id}')" class="px-2.5 py-1 bg-black/5 dark:bg-white/5 hover:bg-emerald-600 hover:text-white rounded border border-black/10 dark:border-white/10 text-[10px] transition-all font-bold ${hasAttachment}">
+                                📄 Bukti
+                            </button>
+                            <span class="text-[10px] opacity-30 italic ${x.attachment ? 'hidden' : 'inline-block'}">-</span>
+                        </td>
+                        <td class="p-4">
+                            <span class="px-2 py-0.5 text-[9px] font-black uppercase rounded border ${badgeClass}">
+                                ${x.status}
+                            </span>
+                        </td>
+                        <td class="p-4 text-right space-x-1 whitespace-nowrap">
+                            <button onclick="approvePermit('${x.id}')" class="p-1.5 bg-emerald-600/10 hover:bg-emerald-600 text-emerald-600 hover:text-white rounded transition-all" title="Setujui Izin">
+                                ✓
+                            </button>
+                            <button onclick="rejectPermit('${x.id}')" class="p-1.5 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white rounded transition-all" title="Tolak Izin">
+                                X
+                            </button>
+                            <button onclick="deletePermit('${x.id}')" class="p-1.5 bg-black/5 dark:bg-white/5 hover:bg-red-600 hover:text-white rounded border border-black/10 dark:border-white/10 transition-all" title="Hapus Permanen">
+                                🗑️
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Render Global Administrative Charts (Charts Panel) with dynamic Class Filters
+        function renderAdminCharts() {
+            const classFilter = ui.adminChartsClassFilter.value;
+            
+            // Filter records & permits based on selected class
+            const filteredRecords = classFilter === "Semua" ? records : records.filter(r => r.kelas === classFilter);
+            const filteredPermits = classFilter === "Semua" ? permits : permits.filter(p => p.kelas === classFilter);
+
+            // 1. Prepare Chart 1 dynamic logic
+            let chart1Type = 'bar';
+            let chart1Labels = [];
+            let chart1Data = [];
+
+            if (classFilter === "Semua") {
+                document.getElementById('admin-chart-1-title').innerText = "Absensi per Kelas (Xe1 - Xe12)";
+                document.getElementById('admin-chart-1-title').className = "text-xs font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400";
+                document.getElementById('admin-chart-1-desc').innerText = "Total seluruh siswa yang hadir di setiap tingkatan kelas";
+                
+                chart1Labels = ['Xe1', 'Xe2', 'Xe3', 'Xe4', 'Xe5', 'Xe6', 'Xe7', 'Xe8', 'Xe9', 'Xe10', 'Xe11', 'Xe12'];
+                chart1Data = chart1Labels.map(cls => records.filter(r => r.kelas === cls).length);
+                chart1Type = 'bar';
+            } else {
+                document.getElementById('admin-chart-1-title').innerText = `Tren Absensi Kelas ${classFilter}`;
+                document.getElementById('admin-chart-1-title').className = "text-xs font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400";
+                document.getElementById('admin-chart-1-desc').innerText = `Jumlah siswa hadir pada kelas ${classFilter} dalam 7 hari terakhir`;
+                
+                // Fetch dynamic last 7 dates
+                const dayLabels = [];
+                const dayCounts = [];
+                for (let i = 6; i >= 0; i--) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    const formattedDate = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+                    dayLabels.push(formattedDate);
+                    
+                    // Filter records for this day and selected class
+                    const countForDay = filteredRecords.filter(r => {
+                        const recDate = new Date(r.timestamp);
+                        return recDate.toDateString() === d.toDateString();
+                    }).length;
+                    
+                    dayCounts.push(countForDay);
+                }
+                
+                chart1Labels = dayLabels;
+                chart1Data = dayCounts;
+                chart1Type = 'line';
+            }
+
+            // 2. Discipline Ratio (On-time vs Late vs Permits approved)
+            let onTimeCount = 0;
+            let lateCount = 0;
+            filteredRecords.forEach(r => {
+                const recStatus = getRecordStatus(r);
+                if (recStatus === 'Tepat Waktu') onTimeCount++;
+                else lateCount++;
+            });
+            const approvedPermitCount = filteredPermits.filter(p => p.status === "Disetujui").length;
+
+            // 3. Permits by Reason (Sakit vs Cuti vs Izin)
+            const sickCount = filteredPermits.filter(p => p.tipe === "Sakit").length;
+            const cutiCount = filteredPermits.filter(p => p.tipe === "Cuti").length;
+            const specialCount = filteredPermits.filter(p => p.tipe === "Izin").length;
+
+            // Destroy existing admin chart instances
+            if (adminClassChartInstance) adminClassChartInstance.destroy();
+            if (adminDisciplineChartInstance) adminDisciplineChartInstance.destroy();
+            if (adminPermitsChartInstance) adminPermitsChartInstance.destroy();
+
+            const isDark = document.body.classList.contains('dark-mode');
+            const isLight = !isDark;
+            const textColor = isLight ? '#334155' : '#cbd5e1';
+            const gridColor = isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)';
+
+            try {
+                // Chart 1 Render
+                const ctxClass = document.getElementById('admin-class-chart').getContext('2d');
+                adminClassChartInstance = new Chart(ctxClass, {
+                    type: chart1Type,
+                    data: {
+                        labels: chart1Labels,
+                        datasets: [{
+                            label: classFilter === "Semua" ? 'Siswa Hadir' : 'Jumlah Hadir',
+                            data: chart1Data,
+                            backgroundColor: chart1Type === 'bar' ? '#10b981' : 'rgba(16, 185, 129, 0.15)',
+                            borderColor: '#10b981',
+                            borderWidth: chart1Type === 'line' ? 3 : 1,
+                            borderRadius: chart1Type === 'bar' ? 6 : 0,
+                            fill: chart1Type === 'line',
+                            tension: 0.3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: chart1Type === 'line' }
+                        },
+                        scales: {
+                            x: {
+                                ticks: { color: textColor, font: { family: 'Plus Jakarta Sans', size: 9 } },
+                                grid: { display: false }
+                            },
+                            y: {
+                                ticks: { color: textColor, font: { family: 'Plus Jakarta Sans', size: 9 } },
+                                grid: { color: gridColor },
+                                suggestedMax: classFilter === "Semua" ? undefined : 10
+                            }
+                        }
+                    }
+                });
+
+                // Chart 2: Global Discipline Ratio Doughnut
+                const ctxDiscipline = document.getElementById('admin-discipline-chart').getContext('2d');
+                adminDisciplineChartInstance = new Chart(ctxDiscipline, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Tepat Waktu', 'Terlambat', 'Izin Disetujui'],
+                        datasets: [{
+                            data: [onTimeCount, lateCount, approvedPermitCount],
+                            backgroundColor: ['#10b981', '#ef4444', '#f59e0b'],
+                            borderColor: isLight ? '#ffffff' : '#1e293b',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { color: textColor, font: { family: 'Plus Jakarta Sans', size: 9 } }
+                            }
+                        }
+                    }
+                });
+
+                // Chart 3: Permits Categories Pie
+                const ctxPermits = document.getElementById('admin-permits-chart').getContext('2d');
+                adminPermitsChartInstance = new Chart(ctxPermits, {
+                    type: 'pie',
+                    data: {
+                        labels: ['Sakit', 'Cuti', 'Izin Khusus'],
+                        datasets: [{
+                            data: [sickCount, cutiCount, specialCount],
+                            backgroundColor: ['#38bdf8', '#fb7185', '#fbbf24'],
+                            borderColor: isLight ? '#ffffff' : '#1e293b',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { color: textColor, font: { family: 'Plus Jakarta Sans', size: 9 } }
+                            }
+                        }
+                    }
+                });
+            } catch (err) {
+                console.error("Gagal menggambar chart admin:", err);
+            }
+        }
+
+        // Action Functions for Leaves/Permits (Admin Portal)
+        window.approvePermit = (id) => {
+            const index = permits.findIndex(p => p.id === id);
+            if (index !== -1) {
+                permits[index].status = "Disetujui";
+                savePermits();
+                renderAdminDashboard();
+                showToast("Pengajuan izin disetujui.");
+            }
+        };
+
+        window.rejectPermit = (id) => {
+            const index = permits.findIndex(p => p.id === id);
+            if (index !== -1) {
+                permits[index].status = "Ditolak";
+                savePermits();
+                renderAdminDashboard();
+                showToast("Pengajuan izin ditolak.");
+            }
+        };
+
+        window.deletePermit = (id) => {
+            permits = permits.filter(p => p.id !== id);
+            savePermits();
+            renderAdminDashboard();
+            showToast("Log pengajuan izin dihapus.");
+        };
+
+        // Attachment Lightbox viewer
+        window.viewPermitAttachment = (id) => {
+            const item = permits.find(p => p.id === id);
+            if (!item || !item.attachment) return;
+
+            ui.detailPermitTitle.innerText = `Lampiran ${item.nama}`;
+            ui.detailPermitMeta.innerText = `ID: ${item.id_peserta} | Kelas: ${item.kelas || 'N/A'}`;
+            ui.detailPermitType.innerText = item.tipe;
+            
+            const startStr = new Date(item.tanggal_mulai).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+            const endStr = new Date(item.tanggal_selesai).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+            ui.detailPermitDuration.innerText = `${startStr} s/d ${endStr}`;
+            
+            ui.detailPermitReason.innerText = `"${item.alasan}"`;
+            ui.detailPermitImg.src = item.attachment;
+
+            ui.permitDetailModal.classList.remove('hidden');
+        };
+
+        window.closePermitDetail = () => {
+            ui.permitDetailModal.classList.add('hidden');
+        };
+
+        window.adminDeleteRecord = (id) => {
+            records = records.filter(r => r.id !== id);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+            renderAdminDashboard();
+            showToast("Log terpilih dihapus permanen.");
+        };
+
+        function renderUniqueEmployeeList() {
+            const counts = {};
+            records.forEach(r => {
+                const mapKey = `${r.id_peserta}_${r.kelas || 'N/A'}`;
+                if(!counts[mapKey]) {
+                    counts[mapKey] = { nama: r.nama, id: r.id_peserta, kelas: r.kelas || 'N/A', count: 0 };
+                }
+                counts[mapKey].count += 1;
+            });
+
+            const items = Object.keys(counts);
+            if (items.length === 0) {
+                ui.adminUniqueList.innerHTML = `<p class="text-[10px] opacity-40 italic p-2 text-slate-500">Direktori kosong.</p>`;
+                return;
+            }
+
+            ui.adminUniqueList.innerHTML = items.map(key => {
+                const item = counts[key];
+                return `
+                    <div class="p-2.5 glass border border-black/5 dark:border-white/5 rounded-xl flex items-center justify-between text-xs">
+                        <div>
+                            <p class="font-bold truncate max-w-[140px]">${item.nama}</p>
+                            <p class="text-[9px] font-mono opacity-50">NIS: ${item.id} | Kelas: ${item.kelas}</p>
+                        </div>
+                        <span class="px-2 py-1 bg-emerald-600/20 text-emerald-600 font-mono font-bold text-[10px] rounded-lg border border-emerald-500/10">
+                            ${item.count} Absen
+                        </span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // EXPORT EXCEL/CSV ENGINE with Dynamic Class Filtering
+        ui.adminExportCsv.onclick = () => {
+            if (records.length === 0) {
+                showToast("Tidak ada data untuk diekspor!", true);
+                return;
+            }
+
+            const exportFilter = ui.adminExportClassSelect.value;
+            const filteredRecords = exportFilter === "Semua" ? records : records.filter(r => r.kelas === exportFilter);
+
+            if (filteredRecords.length === 0) {
+                showToast(`Tidak ada data absensi untuk kelas ${exportFilter}!`, true);
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,ID Record,Nama Lengkap,ID/NIS,Kelas,Status,Tanggal,Waktu,Latitude,Longitude,Akurasi GPS (Meter)\n";
+            
+            filteredRecords.forEach(r => {
+                const dateObj = new Date(r.timestamp);
+                const dateStr = dateObj.toLocaleDateString('id-ID');
+                const timeStr = dateObj.toLocaleTimeString('id-ID');
+                const cleanName = r.nama.replace(/"/g, '""');
+                const cleanId = r.id_peserta.replace(/"/g, '""');
+                const cleanClass = (r.kelas || 'N/A').replace(/"/g, '""');
+                const statusStr = getRecordStatus(r);
+
+                csvContent += `"${r.id}","${cleanName}","${cleanId}","${cleanClass}","${statusStr}","${dateStr}","${timeStr}","${r.lat}","${r.lng}","${Math.round(r.accuracy)}"\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const downloadLink = document.createElement("a");
+            downloadLink.setAttribute("href", encodedUri);
+            downloadLink.setAttribute("download", `Laporan_Absensi_Kelas_${exportFilter}_${Date.now()}.csv`);
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+            showToast(`✓ Laporan Excel (${exportFilter}) berhasil diunduh!`);
+        };
+
+        // Export All Data to Clipboard as JSON
+        ui.adminExportJson.onclick = () => {
+            if (records.length === 0) {
+                showToast("Tidak ada data untuk disalin!", true);
+                return;
+            }
+
+            const rawJSON = JSON.stringify(records, null, 2);
+            const textarea = document.createElement('textarea');
+            textarea.value = rawJSON;
+            document.body.appendChild(textarea);
+            textarea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showToast("✓ Log JSON disalin ke Clipboard!");
+                } else {
+                    showToast("Gagal menyalin data", true);
+                }
+            } catch (err) {
+                showToast("Gagal menyalin data", true);
+            }
+            document.body.removeChild(textarea);
+        };
+
+        // Clear All Database (Internal Confirmation System)
+        ui.adminReset.onclick = () => {
+            if (records.length === 0 && permits.length === 0) {
+                showToast("Database sudah kosong!", true);
+                return;
+            }
+
+            const confirmBox = document.createElement('div');
+            confirmBox.className = "fixed inset-0 z-[120] bg-black/80 backdrop-blur-md flex items-center justify-center p-4";
+            confirmBox.innerHTML = `
+                <div class="glass max-w-sm w-full p-6 text-center space-y-4 border border-red-500/20 shadow-2xl">
+                    <p class="text-2xl">⚠️</p>
+                    <h4 class="text-sm font-black uppercase tracking-wider text-red-500">Hapus Semua Rekor?</h4>
+                    <p class="text-xs opacity-60">Tindakan ini akan menghapus permanen seluruh riwayat absensi DAN pengajuan izin lokal kelas dari browser ini.</p>
+                    <div class="flex gap-2">
+                        <button id="cancel-clear-btn" class="flex-1 py-2.5 rounded-xl bg-black/5 dark:bg-white/5 text-xs font-bold uppercase tracking-wider">Batal</button>
+                        <button id="confirm-clear-btn" class="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold uppercase tracking-wider shadow-lg shadow-red-500/20">Hapus Semua</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(confirmBox);
+
+            document.getElementById('cancel-clear-btn').onclick = () => {
+                document.body.removeChild(confirmBox);
+            };
+
+            document.getElementById('confirm-clear-btn').onclick = () => {
+                records = [];
+                permits = [];
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+                localStorage.setItem(PERMIT_STORAGE_KEY, JSON.stringify(permits));
+                document.body.removeChild(confirmBox);
+                renderAdminDashboard();
+                showToast("✓ Database lokal berhasil direset!");
+            };
+        };
+
+        // Theme Engine Configuration
+        ui.themeBtn.onclick = () => {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            ui.themeBtn.innerText = isDark ? '🌙' : '☀️';
+            localStorage.setItem('biosync_theme_mode', isDark ? 'dark' : 'light');
+            
+            // Re-render open charts to adjust label colors dynamically
+            if (!ui.viewUserStats.classList.contains('hidden')) {
+                renderUserCharts();
+            }
+            if (!ui.viewAdminCharts.classList.contains('hidden')) {
+                renderAdminCharts();
+            }
+        };
+
+        // Apply theme preferences dynamically (DEFAULT: Light Mode as requested!)
+        const savedTheme = localStorage.getItem('biosync_theme_mode');
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark-mode');
+            ui.themeBtn.innerText = '🌙';
+        } else {
+            // Default is Light Mode!
+            document.body.classList.remove('dark-mode');
+            ui.themeBtn.innerText = '☀️';
+        }
+
+        // Live Real-Time Clock & Date Engine
+        setInterval(() => {
+            const d = new Date();
+            if(ui.clock) ui.clock.innerText = d.toLocaleTimeString('id-ID', { hour12: false });
+            if(ui.date) ui.date.innerText = d.toLocaleDateString('id-ID', { 
+                weekday: 'long', 
+                day: '2-digit', 
+                month: 'long', 
+                year: 'numeric' 
+            }).toUpperCase();
+        }, 1000);
+
+        // Pre-configure baseline configurations
+        if (!localStorage.getItem('biosync_settings_late_time')) {
+            localStorage.setItem('biosync_settings_late_time', '07:15');
+        }
+    </script>
+</body>
+</html>
