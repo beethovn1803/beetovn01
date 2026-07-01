@@ -1,0 +1,31 @@
+<svg width="640" height="160" viewBox="0 0 640 160" xmlns="http://www.w3.org/2000/svg" role="img">
+<title>Pangkalan Yulius Rizal - Gas LPG 3kg Bandar Lampung</title>
+<defs>
+  <linearGradient id="markGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#10b981"/>
+    <stop offset="100%" stop-color="#047857"/>
+  </linearGradient>
+</defs>
+
+<g transform="translate(0,0)">
+  <rect x="4" y="4" width="152" height="152" rx="38" fill="url(#markGrad2)"/>
+  <rect x="48" y="96" width="64" height="45" rx="16" fill="#ffffff" opacity="0.14"/>
+  <rect x="68" y="83" width="24" height="13" rx="3" fill="#ffffff" opacity="0.14"/>
+  <path d="M80,42
+           C 80,42 50,80 50,107
+           A 30,30 0 1,0 110,107
+           C 110,80 80,42 80,42
+           Z" fill="#ffffff"/>
+  <path d="M82.4,76.8
+           C 82.4,76.8 66.4,96 66.4,110.4
+           A 16,16 0 1,0 98.4,110.4
+           C 98.4,96 82.4,76.8 82.4,76.8
+           Z" fill="url(#markGrad2)"/>
+</g>
+
+<g font-family="'Plus Jakarta Sans', Arial, sans-serif">
+  <text x="184" y="82" font-size="46" font-weight="800" fill="#0f172a">Yulius Rizal</text>
+  <text x="186" y="110" font-size="15" font-weight="700" letter-spacing="2" fill="#059669">PANGKALAN GAS LPG RESMI</text>
+  <text x="186" y="130" font-size="14" font-weight="500" letter-spacing="1.5" fill="#64748b">BANDAR LAMPUNG</text>
+</g>
+</svg>
