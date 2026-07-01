@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://kennyrafizi.my.id/sitemap.xml
