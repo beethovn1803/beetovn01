@@ -1,0 +1,31 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img">
+<title>Logo Pangkalan Yulius Rizal</title>
+<defs>
+  <linearGradient id="markGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#10b981"/>
+    <stop offset="100%" stop-color="#047857"/>
+  </linearGradient>
+</defs>
+
+<rect x="4" y="4" width="192" height="192" rx="48" fill="url(#markGrad)"/>
+
+<!-- tank silhouette behind flame -->
+<rect x="60" y="120" width="80" height="56" rx="20" fill="#ffffff" opacity="0.14"/>
+<rect x="85" y="104" width="30" height="16" rx="4" fill="#ffffff" opacity="0.14"/>
+
+<!-- flame outer (raindrop silhouette) -->
+<path d="M100,50
+         C 100,50 62,98 62,132
+         A 38,38 0 1,0 138,132
+         C 138,98 100,50 100,50
+         Z"
+      fill="#ffffff"/>
+
+<!-- flame inner two-tone accent -->
+<path d="M103,96
+         C 103,96 83,120 83,138
+         A 20,20 0 1,0 123,138
+         C 123,120 103,96 103,96
+         Z"
+      fill="url(#markGrad)"/>
+</svg>
